@@ -1,9 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-from torch.utils.data import DataLoader
 
 # Device configuration
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -17,7 +15,7 @@ batch_size = 16
 learning_rate = 0.0001
 
 
-# dummy dataset
+# Dummy dataset
 X_list = np.array([i for i in range(100)])
 y_list = np.array([i*3 for i in X_list])
 
@@ -44,13 +42,13 @@ class build_model(nn.Module):
 
 model = build_model(input_size,output_size).to(device)
 
-# loss function and optimizer
+# Loss function and optimizer
 loss_fn = nn.L1Loss()
 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
-# training loop
+# Training loop
 for epoch in range(num_epochs):
-    # forward pass & loss
+    # Forward pass & loss
     y_pred = model(X)
     loss = loss_fn(y_pred, y)
 
@@ -58,12 +56,13 @@ for epoch in range(num_epochs):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
+
+    # Show loss
     if epoch % 100 == 0:
         print(f"Epoch: {epoch} | Train loss: {loss:.5f}")
 
-# plot dataset
+# Plot dataset
 fig, ax = plt.subplots()
 fig.tight_layout()
 ax.plot(X, y, X, y_pred.detach().numpy())
-# ax.set_xticks([i*25 for i in range(9)])
 plt.show()
