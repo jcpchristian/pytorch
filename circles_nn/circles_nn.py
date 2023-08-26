@@ -33,7 +33,7 @@ plt.scatter(x=X[:,0],
             y=X[:,1],
             c=y,
             cmap=plt.cm.RdYlBu)
-plt.savefig("circles")
+plt.savefig("circles_nn")
 
 # Check shapes match
 print(f"X shape: {X.shape}")
