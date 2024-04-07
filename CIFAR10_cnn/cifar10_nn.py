@@ -1,29 +1,26 @@
 import torch
 from torch import nn
-from torch.nn import functional as F
 from torchvision.datasets import CIFAR10
-from torchvision.transforms import ToTensor, Grayscale
-from torch.utils.data import Dataset, DataLoader
+from torchvision.transforms import ToTensor
+from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-import numpy as np
+import time
 
 # Device configuration
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Hyper-parameters
-epochs = 3
-batch_size = 64
-input_size = 1*32*32
+epochs = 30
+batch_size = 32
 output_size = 10
-hidden_size = 128
-learning_rate = 0.01
+learning_rate = 0.001
 
 # Get train & test datasets
 train_set = CIFAR10(root='data',
-                  train=True,
-                  download=True,
-                  transform=ToTensor()
-                  )
+                    train=True,
+                    download=True,
+                    transform=ToTensor()
+                    )
 
 test_set = CIFAR10(root='data',
                    train=False,
@@ -69,34 +66,47 @@ train_features_batch, train_labels_batch = next(iter(train_dataloader))
 print(train_features_batch.shape)
 print(train_labels_batch.shape)
 
+
 # Build model class
 class BuildModel(nn.Module):
-    def __init__(self, input_size, output_size):
+    def __init__(self, output_size):
         super().__init__()
-        self.flatten = nn.Flatten()
-        self.layer1 = nn.Linear(input_size, hidden_size)
+        self.conv1 = nn.Conv2d(3, 6, kernel_size=5, padding=1)
+        self.conv2 = nn.Conv2d(6, 16, kernel_size=5, padding=1)
+        # self.conv3 = nn.Conv2d(16, 32, kernel_size=5, padding=1)
+        self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
         self.relu = nn.ReLU()
-        self.layer2 = nn.Linear(hidden_size, hidden_size)
-        self.relu2 = nn.ReLU()
-        self.layer3 = nn.Linear(hidden_size, output_size)
+        self.flatten = nn.Flatten()
+        self.linear1 = nn.Linear(576, 64)
+        self.linear2 = nn.Linear(64, output_size)
 
     def forward(self, x):
-        out = self.flatten(x)
-        out = self.layer1(out)
-        out = self.relu(out)
-        out = self.layer2(out)
-        out = self.relu2(out)
-        out = self.layer3(out)
-        return out
+        x = self.maxpool(self.relu(self.conv1(x)))
+        x = self.maxpool(self.relu(self.conv2(x)))
+        # x = self.maxpool(self.relu(self.conv3(x)))
+        # x = self.relu(x)
+        # x = self.maxpool(x)
+        # x = self.conv2(x)
+        # x = self.relu(x)
+        # x = self.maxpool(x)
+        # x = self.conv3(x)
+        # x = self.relu(x)
+        # x = self.maxpool(x)
+        x = self.linear2(self.linear1(self.flatten(x)))
+        # x = self.linear1(x)
+        # x = self.linear2(x)
+        return x
 
-model = BuildModel(input_size, output_size).to(device)
+
+model = BuildModel(output_size).to(device)
 print(model)
 
 # Loss function & optimizer
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 
-# Traind & test loop
+start_time = time.time()
+# Train & test loop
 train_loss_values = []
 test_loss_values = []
 for epoch in range(epochs):
@@ -104,31 +114,26 @@ for epoch in range(epochs):
     for batch, (X_train, y_train) in enumerate(train_dataloader, 0):
         model.train()
         optimizer.zero_grad()
-        X_train = Grayscale()(X_train)
         y_pred = model(X_train)
         loss = loss_fn(y_pred, y_train)
         train_loss += loss
         loss.backward()
         optimizer.step()
-        if batch % (batch_size*5) == 0:
-            print(f"Looked at {batch * len(X_train)}/{len(train_dataloader.dataset)} samples")
 
     train_loss /= len(train_dataloader)
 
     model.eval()
-    test_loss=0
+    test_loss = 0
     with torch.inference_mode():
         for X_train, y_train in test_dataloader:
-            X_train = Grayscale()(X_train)
             test_pred = model(X_train)
             test_loss += loss_fn(test_pred, y_train)
 
         test_loss /= len(test_dataloader)
 
-    print(f"Train loss: {train_loss:.5f} | Test loss: {test_loss:.5f}")
+    print(f"Epoch: {epoch}\nTrain loss: {train_loss:.5f} | Test loss: {test_loss:.5f}")
     train_loss_values.append(train_loss)
     test_loss_values.append(test_loss)
 
-# Plot loss
-plt.plot(test_loss_values)
-# plt.show(test_loss_values)
+finish_time = time.time()
+print(finish_time - start_time)
