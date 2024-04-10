@@ -69,6 +69,7 @@ print(train_labels_batch.shape)
 
 # Build model class
 class BuildModel(nn.Module):
+
     def __init__(self, output_size):
         super().__init__()
         self.conv1 = nn.Conv2d(3, 6, kernel_size=5, padding=1)

@@ -66,7 +66,7 @@ class build_model(nn.Module):
         return out
 
 # Accuracy function
-def accuray_fn(y_train, y_pred ):
+def accuray_fn(y_train, y_pred):
     correct = (torch.eq(y_train, y_pred).sum().item()) / len(y_pred) * 100
     return correct
 
@@ -95,3 +95,4 @@ for epoch in range(epochs+1):
     if (epoch) % 100 == 0:
         accuracy = accuray_fn(y_train, y_pred)
         print(f"Epoch: {epoch} | Train loss: {loss:.5f} | Train accuracy: {accuracy}%")
+
